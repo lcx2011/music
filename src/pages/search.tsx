@@ -1,0 +1,9 @@
+const SearchPage = () => {
+  return (
+    <section className="flex h-full items-center justify-center">
+      <h1 className="text-xl font-semibold">搜索</h1>
+    </section>
+  );
+};
+
+export default SearchPage;
