@@ -1,6 +1,6 @@
 .music-detail--container {
   --album-size: clamp(260px, 42vh, 420px);
-  --control-size: 62px;
+  --control-size: 48px;
 
   position: absolute;
   top: 0;
@@ -9,7 +9,6 @@
   bottom: 0;
   z-index: 3000;
   box-sizing: border-box;
-  padding-bottom: var(--appMusicBarHeight);
   display: flex;
   flex-direction: column;
   -webkit-app-region: no-drag;
@@ -32,8 +31,10 @@
 
   & .hide-music-detail {
     position: fixed;
-    right: 36px;
-    top: 36px;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3100;
     $size: 28px;
     width: $size;
     height: $size;
@@ -47,13 +48,12 @@
   /* Album controls under the album cover */
   & .album-controls {
     width: 100%;
-    max-width: var(--album-size);
     margin: 0 auto;
     /* match album width */
     margin-top: 12px;
     display: flex;
     flex-direction: column;
-    row-gap: 20px;
+    row-gap: 10px;
 
     & .row {
       display: flex;
@@ -118,8 +118,7 @@
       align-items: center;
       justify-content: space-between;
       margin-top: -10px;
-      padding: 0 15px; /* 对齐上方进度条的左右边距 */
-
+      padding-left: 15px; /* 左侧保持不变 */
       & .time {
         font-variant-numeric: tabular-nums;
         opacity: 0.75;
@@ -161,6 +160,7 @@
       }
 
       & .ctrl[data-active="true"] {
+        background-color: rgba(255, 255, 255, 0.2);
         filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
       }
     }
@@ -181,68 +181,6 @@
     }
   }
 
-  & .music-title {
-    height: 4.8rem;
-    line-height: 4.8rem;
-    text-align: center;
-    font-size: 2rem;
-    font-weight: 500;
-    margin-top: 1.5rem;
-    width: 80vw;
-    margin-left: 10vw;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-
-  & .music-info {
-    display: flex;
-    width: 70vw;
-    margin-left: 15vw;
-    font-size: 1.2rem;
-    justify-content: center;
-
-    & span {
-      opacity: 0.8;
-      overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      margin-right: 1rem;
-      font-weight: 300;
-    }
-  }
-
-  & .music-body {
-    box-sizing: border-box;
-    padding: 4rem 0;
-    height: 0;
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    column-gap: 54px;
-
-    & .music-album-options {
-
-      object-fit: cover;
-      -webkit-user-drag: none;
-
-      & .music-album {
-        border-radius: 8px;
-        object-fit: cover;
-      }
-
-      & .music-options {
-        margin-top: 18px;
-        height: 64px;
-        width: 100%;
-        display: flex;
-        gap: 12px;
-      }
-    }
-  }
-
-  /* Main area: cover (left) + lyrics (right) side-by-side */
   & .main {
     position: relative;
     display: flex;
@@ -256,28 +194,24 @@
 
   & .left {
     flex: 0 0 auto;
-    width: min(var(--album-size), 80vw);
-    max-width: var(--album-size);
+    width: 26vw;
     min-width: 0;
+    margin-top: 40px;
     display: flex;
     flex-direction: column;
-    /* stack album and controls vertically */
     justify-content: flex-start;
     align-items: stretch;
-    margin-left: 10%;
-    gap: 12px;
+    margin-left: 5%;
   }
 
   & .music-album {
     position: relative;
     width: 100%;
-    max-width: var(--album-size);
     aspect-ratio: 1 / 1;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
     transform: translateY(-6px);
-    /* slight up-shift for better visual balance */
     flex-shrink: 0;
 
     & img {
@@ -289,7 +223,6 @@
     }
   }
 
-  /* Responsive: stack on small widths */
   @media (max-width: 900px) {
     & .main {
       flex-direction: column;
@@ -308,17 +241,13 @@
     }
   }
 
-  /* Lyric area pinned to the right with full screen height */
   & .music-lyric-only {
     width: 51%;
     margin-left: 8%;
     margin-right: 4%;
-    /* occupy remaining vertical space in column layout */
     flex: 1;
     min-height: 0;
-    /* allow children to shrink within flex item */
     display: flex;
-    /* make child stretch */
     align-items: stretch;
 
     &>* {
@@ -329,22 +258,17 @@
 
   & .music-lyric-only * {
     font-size: 37px !important;
-    /*  */
     line-height: 1.4 !important;
-    /*  */
   }
 }
 
-/* Apple Music-like Lyrics background layer, scoped to container */
 .music-detail--container .amll-bg {
   position: absolute;
   inset: 0;
   z-index: -1;
-  /*  */
   pointer-events: none;
-  /*  */
 }
-/* 图标包装组件样式 */
+
 .icon-wrapper {
   display: flex;
   align-items: center;
@@ -352,7 +276,6 @@
   width: 100%;
   height: 100%;
   
-  /* SVG图标样式 */
   svg {
     width: 30px !important;
     height: 30px !important;
@@ -362,32 +285,27 @@
     transition: transform 0.2s ease, color 0.2s ease;
   }
   
-  /* 悬停效果 */
   &:hover svg {
     transform: scale(1.1);
   }
   
-  /* 激活效果 */
   &:active svg {
     transform: scale(0.95);
   }
 }
 
-/* 确保按钮内的图标正确显示 */
 .ctrl {
   .icon-wrapper {
     svg {
-      /* 继承按钮的交互效果 */
       pointer-events: none;
     }
   }
 }
 
-/* 针对不同导入方式的SVG备用样式 */
 .ctrl img[src$=".svg"] {
   width: 30px !important;
   height: 30px !important;
-  filter: brightness(0) invert(1); /* 变为白色 */
+  filter: brightness(0) invert(1);
   transition: transform 0.2s ease;
   
   &:hover {
@@ -399,7 +317,6 @@
   }
 }
 
-/* 如果SVG是作为字符串导入的 */
 .ctrl div[innerHTML] {
   width: 30px;
   height: 30px;
@@ -413,8 +330,8 @@
     color: white !important;
     fill: white !important;
     stroke: white !important;
-    
-  }svg rect {
-      display: none;
-    }
+  }
+  svg rect {
+    display: none;
+  }
 }

@@ -5,6 +5,7 @@ import {
 import { useMemo } from "react";
 
 import usePlayerStore from "@/store/playerStore";
+import useUIStore from "@/store/uiStore";
 
 type PlayerBarProps = {
   sidebarOpen: boolean;
@@ -20,6 +21,7 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
   const shuffle = usePlayerStore((state) => state.shuffle);
   const toggleLoop = usePlayerStore((state) => state.toggleLoop);
   const toggleShuffle = usePlayerStore((state) => state.toggleShuffle);
+  const openMusicDetail = useUIStore((s) => s.openMusicDetail);
 
   const isPlaying = status === "playing";
   const displayTitle = currentSong?.title ?? "未播放歌曲";
@@ -35,7 +37,10 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
         right: "1.5rem",
       }}
     >
-      <div className="flex w-full max-w-4xl items-center justify-between rounded-2xl border-none bg-zinc-900/90 px-6 py-1.5 shadow-lg backdrop-blur">
+      <div
+        className="flex w-full max-w-4xl items-center justify-between rounded-2xl border-none bg-zinc-900/90 px-6 py-1.5 shadow-lg backdrop-blur"
+        onClick={() => openMusicDetail()}
+      >
         <div className="flex items-center gap-4">
           <div className="h-14 w-14 overflow-hidden rounded-xl bg-white/10">
             {artwork ? (
@@ -57,7 +62,8 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
           <button
             className={`rounded-full p-2 transition hover:bg-white/10 ${shuffle ? "bg-white/20" : ""}`}
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               toggleShuffle();
             }}
           >
@@ -66,7 +72,8 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
           <button
             className="rounded-full p-2 transition hover:bg-white/10"
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               void previous();
             }}
           >
@@ -81,7 +88,8 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
             className="rounded-full p-2 transition hover:bg-white/10"
             disabled={!currentSong}
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               void togglePlay();
             }}
           >
@@ -95,7 +103,8 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
           <button
             className="rounded-full p-2 transition hover:bg-white/10"
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               void next();
             }}
           >
@@ -109,7 +118,8 @@ const PlayerBar = ({ sidebarOpen }: PlayerBarProps) => {
           <button
             className={`rounded-full p-2 transition hover:bg-white/10 ${loop ? "bg-white/20" : ""}`}
             type="button"
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               toggleLoop();
             }}
           >

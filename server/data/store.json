@@ -6,6 +6,70 @@
       "password": "lcx20110125abc",
       "playbackHistory": [
         {
+          "songmid": "002mwQcv4Uvw9n",
+          "title": "匿名的好友 (心动版)",
+          "artist": "刘大拿",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000002hPXrB0urchE.jpg",
+          "album": "匿名的好友（心动版）",
+          "playedAt": "2025-10-19T02:05:59.548Z"
+        },
+        {
+          "songmid": "001qAeuI3RzdaS",
+          "title": "你会一直爱我吗",
+          "artist": "不蓝",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003rO7vY1ZICxc.jpg",
+          "album": "你会一直爱我吗",
+          "playedAt": "2025-10-19T02:05:56.459Z"
+        },
+        {
+          "songmid": "003Xtb8Y4MZCYQ",
+          "title": "左手烟火右手诗",
+          "artist": "张妙格",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000000aHz1R0jF3bi.jpg",
+          "album": "左手烟火右手诗",
+          "playedAt": "2025-10-19T02:05:46.442Z"
+        },
+        {
+          "songmid": "003EsBtN04B39m",
+          "title": "这些年过的不太好",
+          "artist": "黑豆ado",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000002r6lXs2QYIzE.jpg",
+          "album": "这些年过的不太好",
+          "playedAt": "2025-10-19T01:54:50.422Z"
+        },
+        {
+          "songmid": "000TVK8X06Z7qG",
+          "title": "删减",
+          "artist": "Joysaaaa",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000001VBFIe4IyBPH.jpg",
+          "album": "删减",
+          "playedAt": "2025-10-19T01:52:31.221Z"
+        },
+        {
+          "songmid": "000TVK8X06Z7qG",
+          "title": "删减",
+          "artist": "Joysaaaa",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000001VBFIe4IyBPH.jpg",
+          "album": "删减",
+          "playedAt": "2025-10-19T01:40:32.682Z"
+        },
+        {
+          "songmid": "000Oz9EM0kkUt1",
+          "title": "Blue Dress",
+          "artist": "GNS耀耀, 沈以诚",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003RNSC63Onob1.jpg",
+          "album": "Blue Dress",
+          "playedAt": "2025-10-19T01:39:37.529Z"
+        },
+        {
+          "songmid": "002w6PCF0WUYSj",
+          "title": "你是我的风景",
+          "artist": "范芽芽",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M00000281BdW0Jqb28.jpg",
+          "album": "你是我的风景",
+          "playedAt": "2025-10-19T01:25:30.526Z"
+        },
+        {
           "songmid": "003ouHMP12glVD",
           "title": "其实",
           "artist": "薛之谦",
@@ -16,7 +80,7 @@
       ],
       "favorites": [],
       "createdAt": "2025-10-19T00:25:21.257Z",
-      "updatedAt": "2025-10-19T01:01:50.280Z"
+      "updatedAt": "2025-10-19T02:05:59.549Z"
     }
   }
 }

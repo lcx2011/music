@@ -27,3 +27,7 @@ pnpm-lock.yaml
 yarn.lock
 package-lock.json
 bun.lockb
+
+# music
+MusicDetail
+server/data/store.json

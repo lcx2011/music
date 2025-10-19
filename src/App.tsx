@@ -5,6 +5,8 @@ import MainHeader from "@/components/layout/main-header";
 import Sidebar from "@/components/layout/sidebar";
 import PlayerBar from "@/components/player/player-bar";
 import PlayerAudioManager from "@/components/player/player-audio-manager";
+import MusicDetail from "@/components/player/music-detail";
+import useUIStore from "@/store/uiStore";
 import HomePage from "@/pages/home";
 import DiscoverPage from "@/pages/discover";
 import FavoritesPage from "@/pages/favorites";
@@ -14,6 +16,7 @@ import PlaylistPage from "@/pages/playlist";
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const musicDetailOpen = useUIStore((s) => s.musicDetailOpen);
 
   return (
     <div className="flex min-h-screen bg-black text-white">
@@ -30,7 +33,7 @@ function App() {
         {!isSidebarOpen && (
           <MainHeader onOpenSidebar={() => setIsSidebarOpen(true)} />
         )}
-        <main className="flex-grow px-6 pt-6 pb-28">
+        <main className={`flex-grow px-6 pt-6 ${!musicDetailOpen ? "pb-28" : "pb-0"}`}>
           <Routes>
             <Route element={<HomePage />} path="/" />
             <Route element={<DiscoverPage />} path="/discover" />
@@ -40,8 +43,9 @@ function App() {
             <Route element={<PlaylistPage />} path="/playlist/:id" />
           </Routes>
         </main>
-        <PlayerBar sidebarOpen={isSidebarOpen} />
+        {!musicDetailOpen && <PlayerBar sidebarOpen={isSidebarOpen} />}
         <PlayerAudioManager />
+        <MusicDetail />
       </div>
     </div>
   );
