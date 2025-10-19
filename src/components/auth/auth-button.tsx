@@ -66,7 +66,7 @@ const EyeFilledIcon = (props: SVGProps<SVGSVGElement>) => {
   );
 };
 
-type AuthErrors = Record<string, string | undefined>;
+type AuthErrors = Record<string, string>;
 
 type AuthButtonProps = {
   className?: string;
@@ -80,7 +80,9 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const [errors, setErrors] = useState<AuthErrors>({});
   const [submitted, setSubmitted] = useState<Record<string, string> | null>(null);
 
-  const showPasswordField = email.trim().length > 0;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+  const isEmailValid = emailRegex.test(email.trim());
+  const showPasswordField = isEmailValid;
 
   const passwordError = useMemo(() => {
     if (!password) {
@@ -179,7 +181,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
               </div>
             </div>
             <Form
-              className="flex flex-col gap-8"
+              className="flex flex-col gap-6"
               validationErrors={errors}
               onSubmit={handleSubmit}
             >
