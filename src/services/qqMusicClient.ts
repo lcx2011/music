@@ -92,6 +92,10 @@ const qqMusicClient = {
       page,
       type: "music",
     }),
+  fetchLyrics: (songmid: string) =>
+    request<{ rawLrc: string; translation?: string }>(
+      `/api/lyrics/${encodeURIComponent(songmid)}`
+    ),
   fetchPlaybackHistory: (email: string) =>
     request<{ playbackHistory: PlaybackHistoryEntry[] }>(
       `/api/users/${encodeURIComponent(email)}/playback-history`,

@@ -11,6 +11,8 @@
     "server": "node server/index.cjs"
   },
   "dependencies": {
+    "@applemusic-like-lyrics/lyric": "^0.2.4",
+    "@applemusic-like-lyrics/react": "^0.1.5",
     "@heroicons/react": "^2.2.0",
     "@heroui/accordion": "^2.2.24",
     "@heroui/button": "2.2.27",
@@ -67,10 +69,12 @@
     "eslint-plugin-unused-imports": "4.1.4",
     "globals": "16.0.0",
     "postcss": "8.5.6",
-    "sass": "^1.79.0",
     "prettier": "3.5.3",
+    "sass": "^1.79.0",
     "typescript": "5.6.3",
     "vite": "6.0.11",
+    "vite-plugin-top-level-await": "^1.6.0",
+    "vite-plugin-wasm": "^3.5.0",
     "vite-tsconfig-paths": "5.1.4"
   }
 }

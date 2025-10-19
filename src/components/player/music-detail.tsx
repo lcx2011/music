@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { ArrowPathRoundedSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
+import { LyricPlayer, BackgroundRender, EplorRenderer } from "@applemusic-like-lyrics/react";
 import usePlayerStore from "@/store/playerStore";
 import useUIStore from "@/store/uiStore";
 import ElasticSlider from "./elastic-slider";
 import "./music-detail.scss";
+import qqMusicClient from "@/services/qqMusicClient";
+import { parseLrc } from "@applemusic-like-lyrics/lyric";
 
 const pad = (n: number) => n.toString().padStart(2, "0");
 const formatTime = (sec?: number | null) => {
@@ -34,7 +37,16 @@ const MusicDetail = () => {
   const isPlaying = status === "playing";
   const artwork = useMemo(() => currentSong?.artwork ?? "", [currentSong?.artwork]);
   const title = currentSong?.title ?? "未播放歌曲";
-  const artist = currentSong?.artist ?? "";
+  const [fetchedLrc, setFetchedLrc] = useState<string | null>(null);
+  const effectiveLrc = currentSong?.lrc ?? fetchedLrc ?? null;
+  const lyricLines = useMemo(() => {
+    if (!effectiveLrc) return [];
+    try {
+      return parseLrc(effectiveLrc) ?? [];
+    } catch {
+      return [];
+    }
+  }, [effectiveLrc]);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -60,6 +72,26 @@ const MusicDetail = () => {
       audio.removeEventListener("loadedmetadata", onLoaded);
     };
   }, [audio]);
+
+  // Fetch lyrics when song changes and no lrc present
+  useEffect(() => {
+    setFetchedLrc(null);
+    const songmid = currentSong?.songmid;
+    if (!songmid) return;
+    if (currentSong?.lrc && currentSong.lrc.length > 0) return;
+    let aborted = false;
+    (async () => {
+      try {
+        const { rawLrc } = await qqMusicClient.fetchLyrics(songmid);
+        if (!aborted) setFetchedLrc(rawLrc || "");
+      } catch (_e) {
+        if (!aborted) setFetchedLrc("");
+      }
+    })();
+    return () => {
+      aborted = true;
+    };
+  }, [currentSong?.songmid, currentSong?.lrc]);
 
   const seek = useCallback(
     (sec: number) => {
@@ -106,7 +138,6 @@ const MusicDetail = () => {
   }, [open]);
 
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-[3000] bg-black" role="dialog" aria-modal onClick={close}>
       <div className="music-detail--container" onClick={(e) => e.stopPropagation()}>
@@ -114,7 +145,13 @@ const MusicDetail = () => {
           ✕
         </button>
 
-        <div className="amll-bg" />
+        <div className="amll-bg">
+          {(() => {
+            const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "http://localhost:4000";
+            const proxied = artwork ? `${API_BASE}/api/proxy-image?url=${encodeURIComponent(artwork)}` : undefined;
+            return <BackgroundRender album={proxied} renderer={EplorRenderer} />;
+          })()}
+        </div>
 
         <div className="main">
           <div className="left">
@@ -175,13 +212,21 @@ const MusicDetail = () => {
           </div>
 
           <div className="music-lyric-only">
-            <div className="flex items-center justify-center w-full">
-              <div className="text-center">
-                <div className="text-2xl font-semibold opacity-80">{title}</div>
-                {artist ? <div className="mt-1 text-base opacity-60">{artist}</div> : null}
-                <div className="mt-10 text-sm opacity-50">歌词功能未接入</div>
+            {lyricLines && lyricLines.length > 0 ? (
+              <LyricPlayer
+                lyricLines={lyricLines}
+                currentTime={currentTime * 1000 + 500}
+                alignPosition={0.3}
+                style={{ height: "100%", width: "100%" }}
+              />
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <div className="text-center">
+                  <div className="text-2xl font-semibold opacity-80">{title}</div>
+                  <div className="mt-1 text-base opacity-60">暂无歌词</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

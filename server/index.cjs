@@ -27,6 +27,7 @@ const loadObfuscatedModule = (relativePath) => {
 };
 
 const qqMusic = loadObfuscatedModule('../1.js');
+const axios = require('axios');
 
 const PORT = process.env.PORT || 4000;
 const app = express();
@@ -265,6 +266,33 @@ app.get(
   asyncHandler(async (req, res) => {
     const data = await qqMusic.getLyric({ songmid: req.params.songmid });
     res.json(data);
+  })
+);
+
+// Simple image proxy to bypass CORS for album artwork used by WebGL background
+app.get(
+  '/api/proxy-image',
+  asyncHandler(async (req, res) => {
+    const { url } = req.query;
+    if (!url || typeof url !== 'string') {
+      return res.status(400).json({ error: 'url is required' });
+    }
+    // Optional: whitelist domains for safety
+    try {
+      const response = await axios.get(url, {
+        responseType: 'arraybuffer',
+        // Provide referer/user-agent when target requires it
+        headers: { referer: 'https://y.qq.com', 'user-agent': 'Mozilla/5.0' },
+        timeout: 15000,
+      });
+      const contentType = response.headers['content-type'] || 'image/jpeg';
+      res.set('Content-Type', contentType);
+      res.set('Cache-Control', 'public, max-age=3600');
+      res.set('Access-Control-Allow-Origin', '*');
+      res.send(Buffer.from(response.data));
+    } catch (err) {
+      res.status(502).json({ error: 'Failed to fetch image' });
+    }
   })
 );
 
