@@ -10,7 +10,7 @@ import type {
 import type { PlaybackHistoryEntry } from "@/types/auth";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+  import.meta.env.VITE_API_BASE_URL ?? window.location.origin;
 
 type RequestOptions = Omit<RequestInit, "body"> & { body?: BodyInit | null };
 

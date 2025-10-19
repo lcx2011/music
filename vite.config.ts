@@ -12,5 +12,11 @@ export default defineConfig({
     watch: {
       ignored: ["**/server/data/**"],
     },
+    proxy: {
+      "/api": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+    },
   },
 });
