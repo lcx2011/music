@@ -35,6 +35,8 @@ const MusicDetail = () => {
   const toggleShuffle = usePlayerStore((s) => s.toggleShuffle);
 
   const isPlaying = status === "playing";
+  const [visible, setVisible] = useState(false);
+  const [animState, setAnimState] = useState<"opening" | "closing">("opening");
   const artwork = useMemo(() => currentSong?.artwork ?? "", [currentSong?.artwork]);
   const title = currentSong?.title ?? "未播放歌曲";
   const [fetchedLrc, setFetchedLrc] = useState<string | null>(null);
@@ -137,9 +139,20 @@ const MusicDetail = () => {
     };
   }, [open]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (open) {
+      setVisible(true);
+      setAnimState("opening");
+    } else if (visible) {
+      setAnimState("closing");
+      const t = setTimeout(() => setVisible(false), 380);
+      return () => clearTimeout(t);
+    }
+  }, [open, visible]);
+
+  if (!visible) return null;
   return (
-    <div className="fixed inset-0 z-[3000] bg-black" role="dialog" aria-modal onClick={close}>
+    <div className="fixed inset-0 z-[3000] bg-black music-detail--overlay" role="dialog" aria-modal onClick={close} data-state={animState}>
       <div className="music-detail--container" onClick={(e) => e.stopPropagation()}>
         <button className="hide-music-detail rounded-full p-2 hover:bg-white/10" onClick={(e) => { e.stopPropagation(); close(); }} aria-label="关闭">
           ✕

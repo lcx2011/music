@@ -6,6 +6,14 @@
       "password": "lcx20110125abc",
       "playbackHistory": [
         {
+          "songmid": "004NXwuk36ixAW",
+          "title": "缘分一道桥",
+          "artist": "王力宏, 谭维维",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000001z1OuX41cBAx.jpg",
+          "album": "A.I. 爱",
+          "playedAt": "2025-10-19T02:41:04.336Z"
+        },
+        {
           "songmid": "004fneUm24gD2c",
           "title": "爱错",
           "artist": "王力宏",
@@ -216,7 +224,7 @@
       ],
       "favorites": [],
       "createdAt": "2025-10-19T00:25:21.257Z",
-      "updatedAt": "2025-10-19T02:35:23.684Z"
+      "updatedAt": "2025-10-19T02:41:04.340Z"
     }
   }
 }
