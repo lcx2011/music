@@ -6,6 +6,54 @@
       "password": "lcx20110125abc",
       "playbackHistory": [
         {
+          "songmid": "004Fs2FP1EvZYc",
+          "title": "晴天 (Live)",
+          "artist": "周杰伦",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000004fXSyj3bWTMN.jpg",
+          "album": "周杰伦地表最强世界巡回演唱会",
+          "playedAt": "2025-10-19T03:00:26.481Z"
+        },
+        {
+          "songmid": "0039MnYb0qxYhV",
+          "title": "晴天",
+          "artist": "周杰伦",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000000MkMni19ClKG.jpg",
+          "album": "叶惠美",
+          "playedAt": "2025-10-19T03:00:16.329Z"
+        },
+        {
+          "songmid": "000Bxpbh0WaFJZ",
+          "title": "万般如一",
+          "artist": "蓝心羽",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003RZeZq1gxicx.jpg",
+          "album": "万般如一",
+          "playedAt": "2025-10-19T02:48:55.828Z"
+        },
+        {
+          "songmid": "000Bxpbh0WaFJZ",
+          "title": "万般如一",
+          "artist": "蓝心羽",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003RZeZq1gxicx.jpg",
+          "album": "万般如一",
+          "playedAt": "2025-10-19T02:48:48.932Z"
+        },
+        {
+          "songmid": "000Bxpbh0WaFJZ",
+          "title": "万般如一",
+          "artist": "蓝心羽",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003RZeZq1gxicx.jpg",
+          "album": "万般如一",
+          "playedAt": "2025-10-19T02:48:24.156Z"
+        },
+        {
+          "songmid": "000Bxpbh0WaFJZ",
+          "title": "万般如一",
+          "artist": "蓝心羽",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000003RZeZq1gxicx.jpg",
+          "album": "万般如一",
+          "playedAt": "2025-10-19T02:48:16.032Z"
+        },
+        {
           "songmid": "004NXwuk36ixAW",
           "title": "缘分一道桥",
           "artist": "王力宏, 谭维维",
@@ -224,7 +272,7 @@
       ],
       "favorites": [],
       "createdAt": "2025-10-19T00:25:21.257Z",
-      "updatedAt": "2025-10-19T02:41:04.340Z"
+      "updatedAt": "2025-10-19T03:00:26.490Z"
     }
   }
 }

@@ -1,6 +1,7 @@
 import type { MusicItem } from "@/types";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 
 import qqMusicClient from "@/services/qqMusicClient";
 import type { PlaybackHistoryEntry } from "@/types/auth";
@@ -35,7 +36,9 @@ interface PlayerState {
   toggleShuffle: () => void;
 }
 
-const usePlayerStore = create<PlayerState>((set, get) => ({
+const usePlayerStore = create<PlayerState>()(
+  persist(
+    (set, get) => ({
   audio: null,
   queue: [],
   currentIndex: -1,
@@ -336,6 +339,31 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
   toggleShuffle: () => {
     set((state) => ({ shuffle: !state.shuffle }));
   },
-}));
+    }),
+    {
+      name: "player_store",
+      version: 1,
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        queue: state.queue,
+        currentIndex: state.currentIndex,
+        currentSong: state.currentSong,
+        volume: state.volume,
+        loop: state.loop,
+        shuffle: state.shuffle,
+      }),
+      migrate: (persisted) => {
+        return {
+          queue: (persisted as any)?.queue ?? [],
+          currentIndex: (persisted as any)?.currentIndex ?? -1,
+          currentSong: (persisted as any)?.currentSong ?? null,
+          volume: (persisted as any)?.volume ?? 0.8,
+          loop: (persisted as any)?.loop ?? false,
+          shuffle: (persisted as any)?.shuffle ?? false,
+        } as Partial<PlayerState> as any;
+      },
+    }
+  )
+);
 
 export default usePlayerStore;
