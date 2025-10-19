@@ -41,7 +41,10 @@ type StatusState = {
   error: string | null;
 };
 
-const createInitialStatus = (): StatusState => ({ loading: false, error: null });
+const createInitialStatus = (): StatusState => ({
+  loading: false,
+  error: null,
+});
 
 const SearchPage = () => {
   const [keyword, setKeyword] = useState("");
@@ -65,7 +68,10 @@ const SearchPage = () => {
   // Debounce keyword
   const debouncedKeyword = useDebounce(keyword, 400);
 
-  const canSearch = useMemo(() => debouncedKeyword.trim().length > 0, [debouncedKeyword]);
+  const canSearch = useMemo(
+    () => debouncedKeyword.trim().length > 0,
+    [debouncedKeyword],
+  );
 
   // Perform search when debounced keyword changes
   useEffect(() => {
@@ -76,13 +82,16 @@ const SearchPage = () => {
         setResults([]);
         setIsEnd(true);
         setStatus(createInitialStatus());
+
         return;
       }
       setStatus({ loading: true, error: null });
       try {
         const res = await qqMusicClient.searchMusic(debouncedKeyword, 1);
+
         if (!active) return;
         const data = res?.data ?? [];
+
         setResults(data);
         setPage(1);
         setIsEnd(Boolean(res?.isEnd ?? true) || data.length === 0);
@@ -124,6 +133,7 @@ const SearchPage = () => {
             const next = page + 1;
             const res = await qqMusicClient.searchMusic(debouncedKeyword, next);
             const more = res?.data ?? [];
+
             setResults((prev) => [...prev, ...more]);
             setPage(next);
             setIsEnd(Boolean(res?.isEnd ?? true) || more.length === 0);
@@ -138,7 +148,9 @@ const SearchPage = () => {
       },
       { threshold: 1.0 },
     );
+
     observer.observe(node);
+
     return () => observer.disconnect();
   }, [status.loading, isEnd, canSearch, page, debouncedKeyword]);
 
@@ -146,28 +158,21 @@ const SearchPage = () => {
     const handleScroll = () => {
       if (window.scrollY > 0) hasScrolledRef.current = true;
     };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
-        {status.loading && <span className="text-sm text-gray-400"></span>}
+        {status.loading && <span className="text-sm text-gray-400" />}
       </div>
       <div className="flex items-center gap-4">
         <div className="mx-auto w-full max-w-xl dark">
           <Input
             isClearable
-            value={keyword}
-            onValueChange={(v: string) => {
-              setTouched(true);
-              setKeyword(v);
-            }}
-            onClear={() => {
-              setKeyword("");
-              setTouched(false);
-            }}
             classNames={{
               label: "text-black/50 dark:text-white/90",
               input: [
@@ -195,13 +200,20 @@ const SearchPage = () => {
             startContent={
               <SearchIcon className="text-black/50 mb-0.5 dark:text-white/90 text-slate-400 pointer-events-none shrink-0" />
             }
+            value={keyword}
+            onClear={() => {
+              setKeyword("");
+              setTouched(false);
+            }}
+            onValueChange={(v: string) => {
+              setTouched(true);
+              setKeyword(v);
+            }}
           />
         </div>
       </div>
 
-      {status.error && (
-        <p className="text-sm text-red-400">{status.error}</p>
-      )}
+      {status.error && <p className="text-sm text-red-400">{status.error}</p>}
 
       {results.length > 0 ? (
         <>
@@ -227,9 +239,13 @@ const SearchPage = () => {
                   )}
                 </div>
                 <div className="space-y-1 text-sm">
-                  <h3 className="truncate text-base font-semibold text-white">{song.title}</h3>
+                  <h3 className="truncate text-base font-semibold text-white">
+                    {song.title}
+                  </h3>
                   {song.artist && (
-                    <p className="truncate text-sm text-gray-400">{song.artist}</p>
+                    <p className="truncate text-sm text-gray-400">
+                      {song.artist}
+                    </p>
                   )}
                 </div>
               </button>
@@ -238,7 +254,8 @@ const SearchPage = () => {
           <div ref={observerRef} className="h-10" />
         </>
       ) : (
-        touched && !status.loading && (
+        touched &&
+        !status.loading && (
           <p className="text-sm text-gray-400">未找到相关结果</p>
         )
       )}
@@ -248,10 +265,13 @@ const SearchPage = () => {
 
 function useDebounce<T>(value: T, delay = 300) {
   const [debounced, setDebounced] = useState(value);
+
   useEffect(() => {
     const id = setTimeout(() => setDebounced(value), delay);
+
     return () => clearTimeout(id);
   }, [value, delay]);
+
   return debounced;
 }
 

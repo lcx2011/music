@@ -1,8 +1,7 @@
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-
-import AuthButton from "@/components/auth/auth-button";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import AuthButton from "@/components/auth/auth-button";
 import HeaderTabs from "@/components/layout/header-tabs";
 
 type MainHeaderProps = {

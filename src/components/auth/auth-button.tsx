@@ -1,4 +1,6 @@
 import type { FormEvent, SVGProps } from "react";
+import type { AuthUser } from "@/types/auth";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { Form } from "@heroui/form";
@@ -6,7 +8,6 @@ import { Input } from "@heroui/input";
 import { UserCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { AnimatePresence, motion } from "framer-motion";
 
-import type { AuthUser } from "@/types/auth";
 import {
   clearStoredAuthUser,
   getStoredAuthUser,
@@ -73,7 +74,8 @@ const EyeFilledIcon = (props: SVGProps<SVGSVGElement>) => {
   );
 };
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
 type AuthErrors = Record<string, string>;
 
@@ -110,6 +112,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     if (password.length < 6) {
       return "密码至少 6 位";
     }
+
     return undefined;
   }, [password]);
 
@@ -121,6 +124,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
           return prev;
         }
         const { password: _passwordError, ...rest } = prev;
+
         return rest;
       });
       setNeedsRegistration(false);
@@ -138,7 +142,10 @@ const AuthButton = ({ className }: AuthButtonProps) => {
       if (!wrapperRef.current) {
         return;
       }
-      if (event.target instanceof Node && wrapperRef.current.contains(event.target)) {
+      if (
+        event.target instanceof Node &&
+        wrapperRef.current.contains(event.target)
+      ) {
         return;
       }
       setMenuOpen(false);
@@ -166,7 +173,10 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     const controller = new AbortController();
     const restore = async () => {
       try {
-        const url = new URL(`/api/users/${encodeURIComponent(stored.email)}`, API_BASE_URL).toString();
+        const url = new URL(
+          `/api/users/${encodeURIComponent(stored.email)}`,
+          API_BASE_URL,
+        ).toString();
         const response = await fetch(url, {
           method: "GET",
           signal: controller.signal,
@@ -209,9 +219,13 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     }
 
     const formData = new FormData(event.currentTarget);
-    const data = Object.fromEntries(formData.entries()) as Record<string, string>;
+    const data = Object.fromEntries(formData.entries()) as Record<
+      string,
+      string
+    >;
 
     const nextErrors: AuthErrors = {};
+
     if (!data.email) {
       nextErrors.email = "请输入邮箱";
     }
@@ -220,11 +234,15 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     } else if (passwordError) {
       nextErrors.password = passwordError;
     }
-    if (needsRegistration && (!data.nickname || data.nickname.trim().length === 0)) {
+    if (
+      needsRegistration &&
+      (!data.nickname || data.nickname.trim().length === 0)
+    ) {
       nextErrors.nickname = "请输入昵称";
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
+
       return;
     }
 
@@ -264,6 +282,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         });
 
         let payload: unknown;
+
         try {
           payload = await response.json();
         } catch (error) {
@@ -272,10 +291,13 @@ const AuthButton = ({ className }: AuthButtonProps) => {
 
         if (!response.ok) {
           const message =
-            (payload && typeof payload === "object" && "error" in payload &&
-              typeof payload.error === "string"
+            (payload &&
+            typeof payload === "object" &&
+            "error" in payload &&
+            typeof payload.error === "string"
               ? payload.error
               : null) ?? "注册失败";
+
           throw new Error(message);
         }
 
@@ -301,6 +323,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         });
 
         let payload: unknown;
+
         try {
           payload = await response.json();
         } catch (error) {
@@ -308,15 +331,19 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         }
 
         const message =
-          (payload && typeof payload === "object" && "error" in payload &&
-            typeof payload.error === "string"
+          (payload &&
+          typeof payload === "object" &&
+          "error" in payload &&
+          typeof payload.error === "string"
             ? payload.error
             : null) ?? "登录失败";
 
         if (!response.ok) {
           const needsRegister =
             response.status === 404 ||
-            (payload && typeof payload === "object" && "needsRegistration" in payload
+            (payload &&
+            typeof payload === "object" &&
+            "needsRegistration" in payload
               ? Boolean(payload.needsRegistration)
               : false) ||
             message.includes("请先注册") ||
@@ -326,6 +353,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
           if (needsRegister) {
             setNeedsRegistration(true);
             setServerError(message);
+
             return;
           }
 
@@ -347,8 +375,9 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         error instanceof Error
           ? error.message
           : typeof error === "string"
-          ? error
-          : "请求失败，请稍后重试";
+            ? error
+            : "请求失败，请稍后重试";
+
       setServerError(message);
     } finally {
       setLoading(false);
@@ -357,13 +386,14 @@ const AuthButton = ({ className }: AuthButtonProps) => {
 
   return (
     <>
-      <div className={`relative ${className ?? ""}`} ref={wrapperRef}>
+      <div ref={wrapperRef} className={`relative ${className ?? ""}`}>
         <button
           className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10"
           type="button"
           onClick={() => {
             if (authStatus.user) {
               setMenuOpen((value) => !value);
+
               return;
             }
             setMenuOpen(false);
@@ -379,9 +409,10 @@ const AuthButton = ({ className }: AuthButtonProps) => {
           )}
         </button>
         {menuOpen ? (
-          <div className="absolute right-0 mt-3 w-40 rounded-xl bg-zinc-900/95 p-2 text-sm text-white shadow-xl ring-1 ring-white/10"
-          >
-            <div className="px-3 pb-2 text-xs text-white/60">{authStatus.user?.email}</div>
+          <div className="absolute right-0 mt-3 w-40 rounded-xl bg-zinc-900/95 p-2 text-sm text-white shadow-xl ring-1 ring-white/10">
+            <div className="px-3 pb-2 text-xs text-white/60">
+              {authStatus.user?.email}
+            </div>
             <button
               className="w-full rounded-lg px-3 py-2 text-left text-sm text-white transition hover:bg-white/10"
               type="button"
@@ -450,8 +481,12 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                 </button>
               </div>
               <div className="mt-2 text-center">
-                <div className="text-3xl font-semibold text-white">登录或注册</div>
-                <p className="mt-2 text-sm text-white/60">使用邮箱登录或创建新账户，继续体验音乐服务</p>
+                <div className="text-3xl font-semibold text-white">
+                  登录或注册
+                </div>
+                <p className="mt-2 text-sm text-white/60">
+                  使用邮箱登录或创建新账户，继续体验音乐服务
+                </p>
               </div>
             </div>
             <Form
@@ -475,9 +510,9 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                   <motion.div
                     key="password-field"
                     animate={{ opacity: 1, y: 0, height: "auto" }}
+                    className="w-full"
                     exit={{ opacity: 0, y: -12, height: 0 }}
                     initial={{ opacity: 0, y: -12, height: 0 }}
-                    className="w-full"
                     style={{ overflow: "hidden" }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
@@ -505,8 +540,8 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                       name="password"
                       type={passwordVisible ? "text" : "password"}
                       value={password}
-                      onValueChange={setPassword}
                       variant="bordered"
+                      onValueChange={setPassword}
                     />
                   </motion.div>
                 ) : null}
@@ -514,9 +549,9 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                   <motion.div
                     key="nickname-field"
                     animate={{ opacity: 1, y: 0, height: "auto" }}
+                    className="w-full"
                     exit={{ opacity: 0, y: 12, height: 0 }}
                     initial={{ opacity: 0, y: 12, height: 0 }}
-                    className="w-full"
                     style={{ overflow: "hidden" }}
                     transition={{ duration: 0.25, ease: "easeOut" }}
                   >
@@ -527,8 +562,8 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                       name="nickname"
                       placeholder="请输入昵称"
                       value={nickname}
-                      onValueChange={setNickname}
                       variant="bordered"
+                      onValueChange={setNickname}
                     />
                   </motion.div>
                 ) : null}

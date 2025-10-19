@@ -7,6 +7,7 @@ export const getStoredAuthUser = (): AuthUser | null => {
     return null;
   }
   const stored = window.localStorage.getItem(AUTH_STORAGE_KEY);
+
   if (!stored) {
     return null;
   }
@@ -15,6 +16,7 @@ export const getStoredAuthUser = (): AuthUser | null => {
   } catch (error) {
     console.warn("Failed to parse stored auth user", error);
     window.localStorage.removeItem(AUTH_STORAGE_KEY);
+
     return null;
   }
 };

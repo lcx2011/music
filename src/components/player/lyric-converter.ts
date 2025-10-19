@@ -38,7 +38,9 @@ function parseTimeToken(token: string): number | null {
   }
 
   const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
   if (!isFinite(totalSeconds)) return null;
+
   return Math.max(0, Math.round(totalSeconds * 1000));
 }
 
@@ -60,9 +62,19 @@ export function convertLrcToAMLL(lrc?: string | null): AppleLyricLine[] {
 
     for (const token of timeTokens) {
       const ms = parseTimeToken(token);
+
       if (ms === null) continue;
       // temporary endTime will be corrected below
-      entries.push({ startTime: ms, endTime: ms + 5000, originalLyric: text, translatedLyric: "", romanLyric: "", words: [], isBG: false, isDuet: false });
+      entries.push({
+        startTime: ms,
+        endTime: ms + 5000,
+        originalLyric: text,
+        translatedLyric: "",
+        romanLyric: "",
+        words: [],
+        isBG: false,
+        isDuet: false,
+      });
     }
   }
 
@@ -71,6 +83,7 @@ export function convertLrcToAMLL(lrc?: string | null): AppleLyricLine[] {
   for (let i = 0; i < entries.length; i++) {
     const curr = entries[i];
     const next = entries[i + 1];
+
     if (next) {
       curr.endTime = next.startTime;
     } else {

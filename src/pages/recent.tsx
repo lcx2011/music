@@ -1,5 +1,6 @@
 import type { PlaybackHistoryEntry } from "@/types/auth";
 import type { MusicItem } from "@/types";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import qqMusicClient from "@/services/qqMusicClient";
@@ -21,7 +22,9 @@ const RecentPage = () => {
   const currentSong = usePlayerStore((state) => state.currentSong);
   const [history, setHistory] = useState<PlaybackHistoryEntry[]>([]);
   const [status, setStatus] = useState<StatusState>(createStatus(true));
-  const [email, setEmail] = useState<string | null>(() => getStoredAuthUser()?.email ?? null);
+  const [email, setEmail] = useState<string | null>(
+    () => getStoredAuthUser()?.email ?? null,
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -54,8 +57,10 @@ const RecentPage = () => {
       try {
         const response = await qqMusicClient.fetchPlaybackHistory(email);
         const entries = response.playbackHistory ?? [];
+
         setHistory(entries);
         const stored = getStoredAuthUser();
+
         if (stored) {
           setStoredAuthUser({ ...stored, playbackHistory: entries });
         }
@@ -63,6 +68,7 @@ const RecentPage = () => {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : "加载最近播放失败";
+
         if (!options?.silent) {
           setStatus({ loading: false, error: message });
         }

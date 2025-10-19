@@ -1,11 +1,21 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { ArrowPathRoundedSquareIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
-import { LyricPlayer, BackgroundRender, EplorRenderer } from "@applemusic-like-lyrics/react";
+import {
+  ArrowPathRoundedSquareIcon,
+  ArrowPathIcon,
+} from "@heroicons/react/24/outline";
+import {
+  LyricPlayer,
+  BackgroundRender,
+  EplorRenderer,
+} from "@applemusic-like-lyrics/react";
+
+import ElasticSlider from "./elastic-slider";
+
 import usePlayerStore from "@/store/playerStore";
 import useUIStore from "@/store/uiStore";
-import ElasticSlider from "./elastic-slider";
 import "./music-detail.scss";
 import qqMusicClient from "@/services/qqMusicClient";
+
 import { parseLrc } from "@applemusic-like-lyrics/lyric";
 
 const pad = (n: number) => n.toString().padStart(2, "0");
@@ -14,6 +24,7 @@ const formatTime = (sec?: number | null) => {
   const s = Math.floor(sec);
   const m = Math.floor(s / 60);
   const r = s % 60;
+
   return `${m}:${pad(r)}`;
 };
 
@@ -37,7 +48,10 @@ const MusicDetail = () => {
   const isPlaying = status === "playing";
   const [visible, setVisible] = useState(false);
   const [animState, setAnimState] = useState<"opening" | "closing">("opening");
-  const artwork = useMemo(() => currentSong?.artwork ?? "", [currentSong?.artwork]);
+  const artwork = useMemo(
+    () => currentSong?.artwork ?? "",
+    [currentSong?.artwork],
+  );
   const title = currentSong?.title ?? "未播放歌曲";
   const [fetchedLrc, setFetchedLrc] = useState<string | null>(null);
   const effectiveLrc = currentSong?.lrc ?? fetchedLrc ?? null;
@@ -79,17 +93,21 @@ const MusicDetail = () => {
   useEffect(() => {
     setFetchedLrc(null);
     const songmid = currentSong?.songmid;
+
     if (!songmid) return;
     if (currentSong?.lrc && currentSong.lrc.length > 0) return;
     let aborted = false;
+
     (async () => {
       try {
         const { rawLrc } = await qqMusicClient.fetchLyrics(songmid);
+
         if (!aborted) setFetchedLrc(rawLrc || "");
       } catch (_e) {
         if (!aborted) setFetchedLrc("");
       }
     })();
+
     return () => {
       aborted = true;
     };
@@ -98,10 +116,13 @@ const MusicDetail = () => {
   const seek = useCallback(
     (sec: number) => {
       if (audio && isFinite(sec)) {
-        audio.currentTime = Math.max(0, Math.min(sec, isFinite(audio.duration) ? audio.duration : sec));
+        audio.currentTime = Math.max(
+          0,
+          Math.min(sec, isFinite(audio.duration) ? audio.duration : sec),
+        );
       }
     },
-    [audio]
+    [audio],
   );
 
   useEffect(() => {
@@ -124,16 +145,20 @@ const MusicDetail = () => {
         seek(currentTime - 5);
       }
     };
+
     window.addEventListener("keydown", onKey);
+
     return () => window.removeEventListener("keydown", onKey);
   }, [open, close, togglePlay, seek, currentTime]);
 
   // Lock body scroll while detail is open
   useEffect(() => {
     const prev = document.body.style.overflow;
+
     if (open) {
       document.body.style.overflow = "hidden";
     }
+
     return () => {
       document.body.style.overflow = prev;
     };
@@ -146,67 +171,142 @@ const MusicDetail = () => {
     } else if (visible) {
       setAnimState("closing");
       const t = setTimeout(() => setVisible(false), 380);
+
       return () => clearTimeout(t);
     }
   }, [open, visible]);
 
   if (!visible) return null;
+
   return (
-    <div className="fixed inset-0 z-[3000] bg-black music-detail--overlay" role="dialog" aria-modal onClick={close} data-state={animState}>
-      <div className="music-detail--container" onClick={(e) => e.stopPropagation()}>
-        <button className="hide-music-detail rounded-full p-2 hover:bg-white/10" onClick={(e) => { e.stopPropagation(); close(); }} aria-label="关闭">
+    <div
+      aria-modal
+      className="fixed inset-0 z-[3000] bg-black music-detail--overlay"
+      data-state={animState}
+      role="dialog"
+      onClick={close}
+    >
+      <div
+        className="music-detail--container"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          aria-label="关闭"
+          className="hide-music-detail rounded-full p-2 hover:bg-white/10"
+          onClick={(e) => {
+            e.stopPropagation();
+            close();
+          }}
+        >
           ✕
         </button>
 
         <div className="amll-bg">
           {(() => {
-            const API_BASE = (import.meta as any).env?.VITE_API_BASE_URL ?? "http://localhost:4000";
-            const proxied = artwork ? `${API_BASE}/api/proxy-image?url=${encodeURIComponent(artwork)}` : undefined;
-            return <BackgroundRender album={proxied} renderer={EplorRenderer} />;
+            const API_BASE =
+              (import.meta as any).env?.VITE_API_BASE_URL ??
+              "http://localhost:4000";
+            const proxied = artwork
+              ? `${API_BASE}/api/proxy-image?url=${encodeURIComponent(artwork)}`
+              : undefined;
+
+            return (
+              <BackgroundRender album={proxied} renderer={EplorRenderer} />
+            );
           })()}
         </div>
 
         <div className="main">
           <div className="left">
             <div className="music-album">
-              {artwork ? <img src={artwork} alt={title} /> : null}
+              {artwork ? <img alt={title} src={artwork} /> : null}
             </div>
 
             <div className="album-controls">
               <div className="row title-row">
-                <div className="title" title={title}>{title}</div>
-                <button className="menu-btn" aria-label="more">⋯</button>
+                <div className="title" title={title}>
+                  {title}
+                </div>
+                <button aria-label="more" className="menu-btn">
+                  ⋯
+                </button>
               </div>
 
               <div className="row progress-row">
                 <ElasticSlider
                   className="progress"
-                  startingValue={0}
-                  defaultValue={isFinite(duration) ? Math.min(Math.max(0, currentTime), Math.max(0, duration)) : 0}
+                  defaultValue={
+                    isFinite(duration)
+                      ? Math.min(
+                          Math.max(0, currentTime),
+                          Math.max(0, duration),
+                        )
+                      : 0
+                  }
                   maxValue={isFinite(duration) ? Math.max(0, duration) : 0}
                   showValueIndicator={false}
+                  startingValue={0}
                   onChange={(val) => seek(val)}
                 />
               </div>
               <div className="row time-row">
                 <span className="time current">{formatTime(currentTime)}</span>
-                <span className="time duration">{formatTime(isFinite(duration) ? duration : undefined)}</span>
+                <span className="time duration">
+                  {formatTime(isFinite(duration) ? duration : undefined)}
+                </span>
               </div>
 
               <div className="row controls-row">
-                <button className={`ctrl shuffle flex items-center justify-center ${shuffle ? "bg-white/20" : ""}`} data-active={shuffle} title="Shuffle" onClick={toggleShuffle}>
+                <button
+                  className={`ctrl shuffle flex items-center justify-center ${shuffle ? "bg-white/20" : ""}`}
+                  data-active={shuffle}
+                  title="Shuffle"
+                  onClick={toggleShuffle}
+                >
                   <ArrowPathRoundedSquareIcon className="h-6 w-6" />
                 </button>
-                <button className="ctrl prev flex items-center justify-center" title="上一首" onClick={() => void previous()}>
-                  <img src="/icon/上.svg" alt="上一首" className="h-6 w-6" style={{ filter: "brightness(0) invert(1)" }} />
+                <button
+                  className="ctrl prev flex items-center justify-center"
+                  title="上一首"
+                  onClick={() => void previous()}
+                >
+                  <img
+                    alt="上一首"
+                    className="h-6 w-6"
+                    src="/icon/上.svg"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                 </button>
-                <button className="ctrl play flex items-center justify-center" title={isPlaying ? "暂停" : "开始"} onClick={() => void togglePlay()}>
-                  <img src={isPlaying ? "/icon/暂停.svg" : "/icon/开始.svg"} alt={isPlaying ? "暂停" : "播放"} className="h-7 w-7" style={{ filter: "brightness(0) invert(1)" }} />
+                <button
+                  className="ctrl play flex items-center justify-center"
+                  title={isPlaying ? "暂停" : "开始"}
+                  onClick={() => void togglePlay()}
+                >
+                  <img
+                    alt={isPlaying ? "暂停" : "播放"}
+                    className="h-7 w-7"
+                    src={isPlaying ? "/icon/暂停.svg" : "/icon/开始.svg"}
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                 </button>
-                <button className="ctrl next flex items-center justify-center" title="下一首" onClick={() => void next()}>
-                  <img src="/icon/下.svg" alt="下一首" className="h-6 w-6" style={{ filter: "brightness(0) invert(1)" }} />
+                <button
+                  className="ctrl next flex items-center justify-center"
+                  title="下一首"
+                  onClick={() => void next()}
+                >
+                  <img
+                    alt="下一首"
+                    className="h-6 w-6"
+                    src="/icon/下.svg"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                  />
                 </button>
-                <button className={`ctrl loop flex items-center justify-center ${loop ? "bg-white/20" : ""}`} data-active={loop} title="Loop" onClick={toggleLoop}>
+                <button
+                  className={`ctrl loop flex items-center justify-center ${loop ? "bg-white/20" : ""}`}
+                  data-active={loop}
+                  title="Loop"
+                  onClick={toggleLoop}
+                >
                   <ArrowPathIcon className="h-6 w-6" />
                 </button>
               </div>
@@ -214,10 +314,10 @@ const MusicDetail = () => {
               <div className="row volume-row">
                 <ElasticSlider
                   className="volume"
-                  startingValue={0}
                   defaultValue={Math.min(Math.max(0, volume * 100), 100)}
                   maxValue={100}
                   showValueIndicator={false}
+                  startingValue={0}
                   onChange={(val) => setVolume(val / 100)}
                 />
               </div>
@@ -227,15 +327,17 @@ const MusicDetail = () => {
           <div className="music-lyric-only">
             {lyricLines && lyricLines.length > 0 ? (
               <LyricPlayer
-                lyricLines={lyricLines}
-                currentTime={currentTime * 1000 + 500}
                 alignPosition={0.3}
+                currentTime={currentTime * 1000 + 500}
+                lyricLines={lyricLines}
                 style={{ height: "100%", width: "100%" }}
               />
             ) : (
               <div className="flex items-center justify-center w-full">
                 <div className="text-center">
-                  <div className="text-2xl font-semibold opacity-80">{title}</div>
+                  <div className="text-2xl font-semibold opacity-80">
+                    {title}
+                  </div>
                   <div className="mt-1 text-base opacity-60">暂无歌词</div>
                 </div>
               </div>

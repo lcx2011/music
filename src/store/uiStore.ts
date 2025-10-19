@@ -11,7 +11,8 @@ const useUIStore = create<UIState>((set) => ({
   musicDetailOpen: false,
   openMusicDetail: () => set({ musicDetailOpen: true }),
   closeMusicDetail: () => set({ musicDetailOpen: false }),
-  toggleMusicDetail: () => set((s) => ({ musicDetailOpen: !s.musicDetailOpen })),
+  toggleMusicDetail: () =>
+    set((s) => ({ musicDetailOpen: !s.musicDetailOpen })),
 }));
 
 export default useUIStore;

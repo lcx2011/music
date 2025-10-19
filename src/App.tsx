@@ -33,7 +33,9 @@ function App() {
         {!isSidebarOpen && (
           <MainHeader onOpenSidebar={() => setIsSidebarOpen(true)} />
         )}
-        <main className={`flex-grow px-6 pt-6 ${!musicDetailOpen ? "pb-28" : "pb-0"}`}>
+        <main
+          className={`flex-grow px-6 pt-6 ${!musicDetailOpen ? "pb-28" : "pb-0"}`}
+        >
           <Routes>
             <Route element={<HomePage />} path="/" />
             <Route element={<DiscoverPage />} path="/discover" />
