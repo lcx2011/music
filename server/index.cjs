@@ -6,6 +6,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { createRequire } = require('node:module');
+const {
+  createUser,
+  getUser,
+  updateUser,
+  verifyCredentials,
+} = require('./utils/dataStore.cjs');
 
 const loadObfuscatedModule = (relativePath) => {
   const absolutePath = path.resolve(__dirname, relativePath);
@@ -28,6 +34,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const sanitizeUser = (user) => {
+  if (!user) {
+    return null;
+  }
+  const { password, ...rest } = user;
+  return rest;
+};
+
+const MAX_HISTORY_LENGTH = 100;
+
 const parsePage = (value, fallback = 1) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) || parsed < 1 ? fallback : parsed;
@@ -44,6 +60,137 @@ const asyncHandler = (handler) => async (req, res, next) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.post(
+  '/api/auth/login',
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body ?? {};
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: '邮箱必填' });
+    }
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ error: '密码必填' });
+    }
+
+    const user = getUser(email);
+
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在', needsRegistration: true });
+    }
+
+    const valid = verifyCredentials({ email, password });
+
+    if (!valid) {
+      return res.status(401).json({ error: '密码错误' });
+    }
+
+    res.json({ user: sanitizeUser(user) });
+  })
+);
+
+app.post(
+  '/api/auth/register',
+  asyncHandler(async (req, res) => {
+    const { email, password, nickname } = req.body ?? {};
+
+    if (!email || typeof email !== 'string') {
+      return res.status(400).json({ error: '邮箱必填' });
+    }
+    if (!password || typeof password !== 'string' || password.length < 6) {
+      return res.status(400).json({ error: '密码至少 6 位' });
+    }
+    if (!nickname || typeof nickname !== 'string' || nickname.trim().length === 0) {
+      return res.status(400).json({ error: '昵称必填' });
+    }
+
+    const existing = getUser(email);
+
+    if (existing) {
+      return res.status(409).json({ error: '用户已存在' });
+    }
+
+    const user = createUser({ email, password, nickname: nickname.trim() });
+
+    if (!user) {
+      return res.status(409).json({ error: '用户已存在' });
+    }
+
+    res.status(201).json({ user: sanitizeUser(user) });
+  })
+);
+
+app.get(
+  '/api/users/:email',
+  asyncHandler(async (req, res) => {
+    const user = getUser(req.params.email);
+
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    res.json({ user: sanitizeUser(user) });
+  })
+);
+
+app.get(
+  '/api/users/:email/playback-history',
+  asyncHandler(async (req, res) => {
+    const user = getUser(req.params.email);
+
+    if (!user) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    res.json({ playbackHistory: user.playbackHistory ?? [] });
+  })
+);
+
+app.post(
+  '/api/users/:email/playback-history',
+  asyncHandler(async (req, res) => {
+    const { entry } = req.body ?? {};
+
+    if (!entry || typeof entry !== 'object') {
+      return res.status(400).json({ error: '播放记录数据无效' });
+    }
+
+    const updated = updateUser(req.params.email, (current) => {
+      const history = Array.isArray(current.playbackHistory)
+        ? current.playbackHistory.slice(0, MAX_HISTORY_LENGTH - 1)
+        : [];
+
+      return {
+        playbackHistory: [entry, ...history],
+      };
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    res.json({ playbackHistory: updated.playbackHistory });
+  })
+);
+
+app.put(
+  '/api/users/:email/favorites',
+  asyncHandler(async (req, res) => {
+    const { favorites } = req.body ?? {};
+
+    if (!Array.isArray(favorites)) {
+      return res.status(400).json({ error: '收藏列表数据无效' });
+    }
+
+    const updated = updateUser(req.params.email, () => ({ favorites }));
+
+    if (!updated) {
+      return res.status(404).json({ error: '用户不存在' });
+    }
+
+    res.json({ favorites: updated.favorites });
+  })
+);
 
 app.get(
   '/api/search',

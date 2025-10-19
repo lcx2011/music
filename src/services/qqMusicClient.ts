@@ -7,11 +7,12 @@ import type {
   TopListDetail,
   TopListGroup,
 } from "@/types";
+import type { PlaybackHistoryEntry } from "@/types/auth";
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 
-type RequestOptions = Omit<RequestInit, "body"> & { body?: unknown };
+type RequestOptions = Omit<RequestInit, "body"> & { body?: BodyInit | null };
 
 const buildUrl = (
   path: string,
@@ -91,9 +92,22 @@ const qqMusicClient = {
       page,
       type: "music",
     }),
+  fetchPlaybackHistory: (email: string) =>
+    request<{ playbackHistory: PlaybackHistoryEntry[] }>(
+      `/api/users/${encodeURIComponent(email)}/playback-history`,
+    ),
+  addPlaybackHistory: (email: string, entry: PlaybackHistoryEntry) =>
+    request<{ playbackHistory: PlaybackHistoryEntry[] }>(
+      `/api/users/${encodeURIComponent(email)}/playback-history`,
+      {
+        method: "POST",
+        body: JSON.stringify({ entry }),
+      },
+    ),
 };
 
 export default qqMusicClient;
+export type { PlaybackHistoryEntry };
 export type {
   MediaSourceResponse,
   MusicItem,

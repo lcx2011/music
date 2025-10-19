@@ -3,6 +3,8 @@ import type { MusicItem } from "@/types";
 import { create } from "zustand";
 
 import qqMusicClient from "@/services/qqMusicClient";
+import type { PlaybackHistoryEntry } from "@/types/auth";
+import { getStoredAuthUser, setStoredAuthUser } from "@/utils/authStorage";
 
 type PlayerStatus = "idle" | "loading" | "playing" | "paused";
 
@@ -61,7 +63,15 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
     await get().playAt(startIndex, songs);
   },
   playSong: async (song) => {
-    await get().playAt(0, [song]);
+    const audio = get().audio;
+
+    if (!audio) {
+      return;
+    }
+
+    const queue = [song];
+    set({ queue, currentIndex: 0 });
+    await get().playAt(0);
   },
   playAt: async (index, queueOverride) => {
     const audio = get().audio;
@@ -98,6 +108,31 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
       currentUrl: state.currentUrl,
     }));
 
+    const recordPlaybackHistory = async (song: MusicItem) => {
+      const auth = getStoredAuthUser();
+
+      if (!auth?.email) {
+        return;
+      }
+
+      const entry: PlaybackHistoryEntry = {
+        songmid: song.songmid,
+        title: song.title,
+        artist: song.artist,
+        artwork: song.artwork,
+        album: song.album,
+        playedAt: new Date().toISOString(),
+      };
+
+      try {
+        const response = await qqMusicClient.addPlaybackHistory(auth.email, entry);
+        const history = response.playbackHistory ?? [];
+        setStoredAuthUser({ ...auth, playbackHistory: history });
+      } catch (error) {
+        console.warn("记录播放历史失败", error);
+      }
+    };
+
     const applyUrl = async (url: string) => {
       const activeRequest = get().currentRequestId;
 
@@ -114,6 +149,7 @@ const usePlayerStore = create<PlayerState>((set, get) => ({
       try {
         await currentAudio.play();
         set({ status: "playing", currentUrl: url });
+        void recordPlaybackHistory(song);
       } catch (error) {
         console.error("音频播放失败", error);
         set({ status: "paused", currentUrl: url });

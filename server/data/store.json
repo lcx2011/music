@@ -1,0 +1,22 @@
+{
+  "users": {
+    "lcx110125@outlook.com": {
+      "email": "lcx110125@outlook.com",
+      "nickname": "lcx2011",
+      "password": "lcx20110125abc",
+      "playbackHistory": [
+        {
+          "songmid": "003ouHMP12glVD",
+          "title": "其实",
+          "artist": "薛之谦",
+          "artwork": "https://y.gtimg.cn/music/photo_new/T002R800x800M000000QgFcm0v8WaF.jpg",
+          "album": "意外",
+          "playedAt": "2025-10-19T01:01:50.275Z"
+        }
+      ],
+      "favorites": [],
+      "createdAt": "2025-10-19T00:25:21.257Z",
+      "updatedAt": "2025-10-19T01:01:50.280Z"
+    }
+  }
+}

@@ -1,10 +1,17 @@
 import type { FormEvent, SVGProps } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@heroui/button";
 import { Form } from "@heroui/form";
 import { Input } from "@heroui/input";
 import { UserCircleIcon, XMarkIcon } from "@heroicons/react/24/solid";
 import { AnimatePresence, motion } from "framer-motion";
+
+import type { AuthUser } from "@/types/auth";
+import {
+  clearStoredAuthUser,
+  getStoredAuthUser,
+  setStoredAuthUser,
+} from "@/utils/authStorage";
 
 const EyeSlashFilledIcon = (props: SVGProps<SVGSVGElement>) => {
   return (
@@ -66,7 +73,13 @@ const EyeFilledIcon = (props: SVGProps<SVGSVGElement>) => {
   );
 };
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
+
 type AuthErrors = Record<string, string>;
+
+type AuthStatus = {
+  user: AuthUser | null;
+};
 
 type AuthButtonProps = {
   className?: string;
@@ -77,8 +90,14 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const [email, setEmail] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
   const [errors, setErrors] = useState<AuthErrors>({});
-  const [submitted, setSubmitted] = useState<Record<string, string> | null>(null);
+  const [needsRegistration, setNeedsRegistration] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [authStatus, setAuthStatus] = useState<AuthStatus>({ user: null });
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
   const isEmailValid = emailRegex.test(email.trim());
@@ -104,11 +123,91 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         const { password: _passwordError, ...rest } = prev;
         return rest;
       });
+      setNeedsRegistration(false);
+      setNickname("");
+      setServerError(null);
     }
   }, [showPasswordField]);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (!wrapperRef.current) {
+        return;
+      }
+      if (event.target instanceof Node && wrapperRef.current.contains(event.target)) {
+        return;
+      }
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const stored = getStoredAuthUser();
+
+    if (!stored?.email) {
+      return;
+    }
+
+    setAuthStatus({ user: stored });
+    setEmail(stored.email);
+
+    const controller = new AbortController();
+    const restore = async () => {
+      try {
+        const url = new URL(`/api/users/${encodeURIComponent(stored.email)}`, API_BASE_URL).toString();
+        const response = await fetch(url, {
+          method: "GET",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to restore session: ${response.status}`);
+        }
+
+        const payload = (await response.json()) as { user?: AuthUser };
+
+        if (payload?.user) {
+          setAuthStatus({ user: payload.user });
+          setEmail(payload.user.email ?? "");
+          setStoredAuthUser(payload.user);
+        }
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+        console.warn("Failed to refresh auth session", error);
+        clearStoredAuthUser();
+        setAuthStatus({ user: null });
+        setEmail("");
+      }
+    };
+
+    void restore();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (loading) {
+      return;
+    }
+
     const formData = new FormData(event.currentTarget);
     const data = Object.fromEntries(formData.entries()) as Record<string, string>;
 
@@ -121,26 +220,190 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     } else if (passwordError) {
       nextErrors.password = passwordError;
     }
+    if (needsRegistration && (!data.nickname || data.nickname.trim().length === 0)) {
+      nextErrors.nickname = "请输入昵称";
+    }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
     }
 
     setErrors({});
-    setSubmitted(data);
+    setServerError(null);
+    setLoading(true);
+
+    const loginUrl = new URL("/api/auth/login", API_BASE_URL).toString();
+    const registerUrl = new URL("/api/auth/register", API_BASE_URL).toString();
+
+    const handleSuccess = (user: AuthUser) => {
+      setAuthStatus({ user });
+      setServerError(null);
+      setNeedsRegistration(false);
+      setNickname("");
+      setLoading(false);
+      setPasswordVisible(false);
+      setOpen(false);
+      setMenuOpen(false);
+      setEmail(user.email);
+      setPassword("");
+      setStoredAuthUser(user);
+    };
+
+    try {
+      if (needsRegistration) {
+        const response = await fetch(registerUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            nickname: data.nickname?.trim() ?? "",
+          }),
+        });
+
+        let payload: unknown;
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          const message =
+            (payload && typeof payload === "object" && "error" in payload &&
+              typeof payload.error === "string"
+              ? payload.error
+              : null) ?? "注册失败";
+          throw new Error(message);
+        }
+
+        if (
+          payload &&
+          typeof payload === "object" &&
+          "user" in payload &&
+          payload.user &&
+          typeof payload.user === "object"
+        ) {
+          handleSuccess(payload.user as AuthUser);
+        }
+      } else {
+        const response = await fetch(loginUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+          }),
+        });
+
+        let payload: unknown;
+        try {
+          payload = await response.json();
+        } catch (error) {
+          payload = null;
+        }
+
+        const message =
+          (payload && typeof payload === "object" && "error" in payload &&
+            typeof payload.error === "string"
+            ? payload.error
+            : null) ?? "登录失败";
+
+        if (!response.ok) {
+          const needsRegister =
+            response.status === 404 ||
+            (payload && typeof payload === "object" && "needsRegistration" in payload
+              ? Boolean(payload.needsRegistration)
+              : false) ||
+            message.includes("请先注册") ||
+            message.includes("用户不存在") ||
+            message.toLowerCase().includes("username and password");
+
+          if (needsRegister) {
+            setNeedsRegistration(true);
+            setServerError(message);
+            return;
+          }
+
+          throw new Error(message);
+        }
+
+        if (
+          payload &&
+          typeof payload === "object" &&
+          "user" in payload &&
+          payload.user &&
+          typeof payload.user === "object"
+        ) {
+          handleSuccess(payload.user as AuthUser);
+        }
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : typeof error === "string"
+          ? error
+          : "请求失败，请稍后重试";
+      setServerError(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <>
-      <button
-        className={className ?? "ml-4"}
-        type="button"
-        onClick={() => {
-          setOpen(true);
-        }}
-      >
-        <UserCircleIcon className="h-9 w-9 text-gray-500" />
-      </button>
+      <div className={`relative ${className ?? ""}`} ref={wrapperRef}>
+        <button
+          className="flex h-9 w-9 items-center justify-center rounded-full transition hover:bg-white/10"
+          type="button"
+          onClick={() => {
+            if (authStatus.user) {
+              setMenuOpen((value) => !value);
+              return;
+            }
+            setMenuOpen(false);
+            setOpen(true);
+          }}
+        >
+          {authStatus.user ? (
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-sm font-semibold text-white">
+              {authStatus.user.nickname?.slice(0, 2) ?? "我"}
+            </span>
+          ) : (
+            <UserCircleIcon className="h-9 w-9 text-gray-500" />
+          )}
+        </button>
+        {menuOpen ? (
+          <div className="absolute right-0 mt-3 w-40 rounded-xl bg-zinc-900/95 p-2 text-sm text-white shadow-xl ring-1 ring-white/10"
+          >
+            <div className="px-3 pb-2 text-xs text-white/60">{authStatus.user?.email}</div>
+            <button
+              className="w-full rounded-lg px-3 py-2 text-left text-sm text-white transition hover:bg-white/10"
+              type="button"
+              onClick={() => {
+                setAuthStatus({ user: null });
+                setMenuOpen(false);
+                setEmail("");
+                setPassword("");
+                setNickname("");
+                setNeedsRegistration(false);
+                setServerError(null);
+                setErrors({});
+                setPasswordVisible(false);
+                setOpen(false);
+                clearStoredAuthUser();
+              }}
+            >
+              退出登录
+            </button>
+          </div>
+        ) : null}
+      </div>
       {open ? (
         <div
           aria-modal="true"
@@ -148,9 +411,15 @@ const AuthButton = ({ className }: AuthButtonProps) => {
           role="dialog"
           onClick={() => {
             setOpen(false);
-            setSubmitted(null);
             setPassword("");
             setErrors({});
+            setNeedsRegistration(false);
+            setNickname("");
+            setServerError(null);
+            setLoading(false);
+            setPasswordVisible(false);
+            setMenuOpen(false);
+            clearStoredAuthUser();
           }}
         >
           <div
@@ -167,9 +436,14 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                   type="button"
                   onClick={() => {
                     setOpen(false);
-                    setSubmitted(null);
                     setPassword("");
                     setErrors({});
+                    setNeedsRegistration(false);
+                    setNickname("");
+                    setServerError(null);
+                    setLoading(false);
+                    setPasswordVisible(false);
+                    setMenuOpen(false);
                   }}
                 >
                   <XMarkIcon className="h-5 w-5" />
@@ -183,7 +457,9 @@ const AuthButton = ({ className }: AuthButtonProps) => {
             <Form
               className="flex flex-col gap-6"
               validationErrors={errors}
-              onSubmit={handleSubmit}
+              onSubmit={(event) => {
+                void handleSubmit(event);
+              }}
             >
               <Input
                 isRequired
@@ -234,24 +510,45 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                     />
                   </motion.div>
                 ) : null}
+                {needsRegistration ? (
+                  <motion.div
+                    key="nickname-field"
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: 12, height: 0 }}
+                    initial={{ opacity: 0, y: 12, height: 0 }}
+                    className="w-full"
+                    style={{ overflow: "hidden" }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    <Input
+                      isRequired
+                      errorMessage={errors.nickname}
+                      label="设置昵称"
+                      name="nickname"
+                      placeholder="请输入昵称"
+                      value={nickname}
+                      onValueChange={setNickname}
+                      variant="bordered"
+                    />
+                  </motion.div>
+                ) : null}
               </AnimatePresence>
               <Button
                 className="mt-2 w-full bg-white/10 text-white hover:bg-white/15"
-                isDisabled={!showPasswordField}
+                disableRipple={true}
+                isDisabled={!showPasswordField || loading}
+                isLoading={loading}
                 radius="lg"
                 size="lg"
                 type="submit"
                 variant="shadow"
-                disableRipple={true}
               >
                 继续
               </Button>
+              {serverError ? (
+                <div className="text-sm text-red-400">{serverError}</div>
+              ) : null}
             </Form>
-            {submitted ? (
-              <div className="mt-4 text-xs text-white/60">
-                已提交：<code>{JSON.stringify(submitted)}</code>
-              </div>
-            ) : null}
           </div>
         </div>
       ) : null}
