@@ -8,6 +8,7 @@ export interface MusicItem {
   lrc?: string;
   albumid?: string | number;
   albummid?: string;
+  duration?: number;
 }
 
 export interface TopListSummary {
@@ -55,4 +56,13 @@ export interface RecommendSheetItem {
 export interface RecommendSheetsResponse {
   isEnd: boolean;
   data: RecommendSheetItem[];
+}
+
+export interface MediaSourceResponse {
+  url: string;
+}
+
+export interface SearchResponse {
+  data: MusicItem[];
+  isEnd: boolean;
 }

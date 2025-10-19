@@ -1,3 +1,25 @@
 @import "tailwindcss";
 
+.playlist-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.playlist-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.playlist-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.playlist-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.playlist-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
 @config "../../tailwind.config.js"

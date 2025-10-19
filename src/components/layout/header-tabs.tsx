@@ -77,11 +77,11 @@ const HeaderTabs = ({ onOpenSidebar }: HeaderTabsProps) => {
   return (
     <Tabs
       aria-label="主导航"
+      className="justify-center w-full max-w-3xl dark"
       radius="full"
       selectedKey={selectedKey}
-      onSelectionChange={handleSelectionChange}
       variant="solid"
-      className="justify-center w-full max-w-3xl dark"
+      onSelectionChange={handleSelectionChange}
     >
       {TAB_ITEMS.map((item) => (
         <Tab key={item.key} title={item.title} />

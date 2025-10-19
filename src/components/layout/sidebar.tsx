@@ -1,5 +1,12 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { HomeIcon, MagnifyingGlassIcon, SparklesIcon, HeartIcon, ClockIcon, PlusCircleIcon } from "@heroicons/react/24/outline";
+import {
+  HomeIcon,
+  MagnifyingGlassIcon,
+  SparklesIcon,
+  HeartIcon,
+  ClockIcon,
+  PlusCircleIcon,
+} from "@heroicons/react/24/outline";
 
 import { SidebarIcon } from "@/components/icons";
 
@@ -51,8 +58,8 @@ const Sidebar = ({ onCloseSidebar }: SidebarProps) => {
     <aside className="flex h-screen w-72 flex-col border-r border-white/10 bg-zinc-900 px-6 py-6">
       <button
         className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border-none text-white transition hover:text-gray-400"
-        onClick={onCloseSidebar}
         type="button"
+        onClick={onCloseSidebar}
       >
         <SidebarIcon className="h-5 w-5" />
       </button>
@@ -65,12 +72,12 @@ const Sidebar = ({ onCloseSidebar }: SidebarProps) => {
             <button
               key={path ?? label}
               className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition ${isActive ? "bg-white/15 text-white" : "text-white/70 hover:bg-white/10 hover:text-white"}`}
+              type="button"
               onClick={() => {
                 if (path) {
                   handleNavigate(path);
                 }
               }}
-              type="button"
             >
               <Icon className="h-5 w-5" />
               <span>{label}</span>

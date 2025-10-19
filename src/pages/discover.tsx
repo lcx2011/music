@@ -1,7 +1,9 @@
+import type { MusicItem } from "@/types";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import qqMusicClient from "@/services/qqMusicClient";
-import type { MusicItem } from "@/types";
+import usePlayerStore from "@/store/playerStore";
 
 type StatusState = {
   loading: boolean;
@@ -28,14 +30,27 @@ const DiscoverPage = () => {
       }
 
       const chunk = pendingSongsRef.current.splice(0, CHUNK_SIZE);
+
       if (chunk.length === 0) {
         return false;
       }
 
       setDisplaySongs((prev) => (replace ? chunk : [...prev, ...chunk]));
+
       return chunk.length === CHUNK_SIZE;
     },
-    [setDisplaySongs]
+    [setDisplaySongs],
+  );
+
+  const playQueue = usePlayerStore((state) => state.playQueue);
+  const handlePlaySong = useCallback(
+    (index: number) => {
+      if (displaySongs.length === 0) {
+        return;
+      }
+      void playQueue(displaySongs, index);
+    },
+    [displaySongs, playQueue],
   );
 
   useEffect(() => {
@@ -44,13 +59,19 @@ const DiscoverPage = () => {
     const loadSongs = async () => {
       try {
         setStatus((prev) => ({ ...prev, loading: true, error: null }));
-        const sheetsResponse = await qqMusicClient.fetchRecommendSheetsByTag(undefined, page);
+        const sheetsResponse = await qqMusicClient.fetchRecommendSheetsByTag(
+          undefined,
+          page,
+        );
+
         if (!active) return;
 
         const sheets = sheetsResponse.data ?? [];
+
         if (sheets.length === 0) {
           setHasMore(false);
           setStatus({ loading: false, error: null });
+
           return;
         }
 
@@ -60,18 +81,21 @@ const DiscoverPage = () => {
           targetSheets.map(async (sheet) => {
             try {
               const detail = await qqMusicClient.fetchMusicSheetInfo(sheet.id);
+
               return detail.musicList ?? [];
             } catch (error) {
               console.warn("Failed to load music sheet", sheet.id, error);
+
               return [] as MusicItem[];
             }
-          })
+          }),
         );
 
         if (!active) return;
 
         const pooledSongs = sheetSongs.flat();
         const uniqueMap = new Map<string, MusicItem>();
+
         pooledSongs.forEach((song) => {
           if (song?.songmid && !uniqueMap.has(song.songmid)) {
             uniqueMap.set(song.songmid, song);
@@ -86,11 +110,13 @@ const DiscoverPage = () => {
             return false;
           }
           loadedSongIdsRef.current.add(song.songmid);
+
           return true;
         });
 
         if (freshSongs.length > 0) {
           const shuffled = [...freshSongs].sort(() => Math.random() - 0.5);
+
           pendingSongsRef.current.push(...shuffled);
           appendChunk(page === 1);
         }
@@ -114,6 +140,7 @@ const DiscoverPage = () => {
     };
 
     loadSongs();
+
     return () => {
       active = false;
     };
@@ -127,6 +154,7 @@ const DiscoverPage = () => {
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
@@ -149,15 +177,17 @@ const DiscoverPage = () => {
 
           hasScrolledRef.current = false;
           const appended = appendChunk();
+
           if (!appended && hasMore) {
             setPage((prev) => prev + 1);
           }
         });
       },
-      { threshold: 1.0 }
+      { threshold: 1.0 },
     );
 
     observer.observe(node);
+
     return () => {
       observer.disconnect();
     };
@@ -167,7 +197,9 @@ const DiscoverPage = () => {
     <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">发现</h1>
-        {status.loading && <span className="text-sm text-gray-400">加载中...</span>}
+        {status.loading && (
+          <span className="text-sm text-gray-400">加载中...</span>
+        )}
       </div>
 
       {status.error ? (
@@ -175,24 +207,43 @@ const DiscoverPage = () => {
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6">
-            {displaySongs.map((song) => (
-              <article key={song.songmid} className="space-y-2">
+            {displaySongs.map((song, index) => (
+              <button
+                key={song.songmid}
+                className="group space-y-2 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
+                type="button"
+                onClick={() => handlePlaySong(index)}
+              >
                 <div className="aspect-square w-full overflow-hidden rounded-xl bg-white/10">
                   {song.artwork ? (
-                    <img alt={song.title} className="h-full w-full object-cover" src={song.artwork} />
+                    <img
+                      alt={song.title}
+                      className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      src={song.artwork}
+                    />
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-gray-300">推荐曲目</div>
+                    <div className="flex h-full items-center justify-center text-sm text-gray-300">
+                      推荐曲目
+                    </div>
                   )}
                 </div>
                 <div className="space-y-1 text-sm">
-                  <h3 className="truncate text-base font-semibold text-white">{song.title}</h3>
-                  {song.artist && <p className="truncate text-sm text-gray-400">{song.artist}</p>}
+                  <h3 className="truncate text-base font-semibold text-white">
+                    {song.title}
+                  </h3>
+                  {song.artist && (
+                    <p className="truncate text-sm text-gray-400">
+                      {song.artist}
+                    </p>
+                  )}
                 </div>
-              </article>
+              </button>
             ))}
           </div>
           <div ref={observerRef} className="h-10" />
-          {!status.loading && displaySongs.length === 0 && <p className="text-sm text-gray-400">暂无推荐曲目</p>}
+          {!status.loading && displaySongs.length === 0 && (
+            <p className="text-sm text-gray-400">暂无推荐曲目</p>
+          )}
         </>
       )}
     </section>
