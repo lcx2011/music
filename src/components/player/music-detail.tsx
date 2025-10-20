@@ -205,7 +205,7 @@ const MusicDetail = () => {
           {(() => {
             const API_BASE =
               (import.meta as any).env?.VITE_API_BASE_URL ??
-              "http://localhost:4000";
+              window.location.origin;
             const proxied = artwork
               ? `${API_BASE}/api/proxy-image?url=${encodeURIComponent(artwork)}`
               : undefined;
@@ -219,7 +219,14 @@ const MusicDetail = () => {
         <div className="main">
           <div className="left">
             <div className="music-album">
-              {artwork ? <img alt={title} src={artwork} /> : null}
+              {(() => {
+                if (!artwork) return null;
+                const API_BASE =
+                  (import.meta as any).env?.VITE_API_BASE_URL ??
+                  window.location.origin;
+                const proxied = `${API_BASE}/api/proxy-image?url=${encodeURIComponent(artwork)}`;
+                return <img alt={title} src={proxied} />;
+              })()}
             </div>
 
             <div className="album-controls">
