@@ -16,7 +16,8 @@ import useUIStore from "@/store/uiStore";
 import "./music-detail.scss";
 import qqMusicClient from "@/services/qqMusicClient";
 
-import { parseLrc } from "@applemusic-like-lyrics/lyric";
+import { parseLrc} from "@applemusic-like-lyrics/lyric";
+import type { LyricLine, LyricWord } from "@applemusic-like-lyrics/lyric";
 
 const pad = (n: number) => n.toString().padStart(2, "0");
 const formatTime = (sec?: number | null) => {
@@ -26,6 +27,53 @@ const formatTime = (sec?: number | null) => {
   const r = s % 60;
 
   return `${m}:${pad(r)}`;
+};
+
+// Minimal YRC parser: parses lines like
+// [start,duration]字(start,dur)字(start,dur)...
+// start/duration are in milliseconds and are absolute timestamps in the file
+const parseYrcLocal = (src: string): LyricLine[] => {
+  if (!src) return [];
+  const lines: LyricLine[] = [];
+  const headerRe = /^\[(\d+),(\d+)\](.*)$/;
+  const wordRe = /([^()]*?)\((\d+),(\d+)\)/g;
+
+  for (const raw of src.split(/\r?\n/)) {
+    const line = raw.trimEnd();
+    if (!line) continue;
+    const m = line.match(headerRe);
+    if (!m) continue;
+    const lineStart = Number(m[1]);
+    const lineDur = Number(m[2]);
+    const rest = m[3] ?? "";
+
+    const words: LyricWord[] = [] as unknown as LyricWord[];
+    let maxEnd = lineStart + (isFinite(lineDur) ? lineDur : 0);
+    let match: RegExpExecArray | null;
+    wordRe.lastIndex = 0;
+    while ((match = wordRe.exec(rest)) !== null) {
+      const text = match[1] ?? "";
+      const start = Number(match[2]);
+      const dur = Number(match[3]);
+      const end = start + (isFinite(dur) ? dur : 0);
+      if (end > maxEnd) maxEnd = end;
+      words.push({ startTime: start, endTime: end, word: text } as LyricWord);
+    }
+
+    const startTime = lineStart;
+    const endTime = maxEnd;
+    lines.push({
+      words,
+      translatedLyric: "",
+      romanLyric: "",
+      isBG: false,
+      isDuet: false,
+      startTime,
+      endTime,
+    });
+  }
+
+  return lines;
 };
 
 const MusicDetail = () => {
@@ -54,15 +102,24 @@ const MusicDetail = () => {
   );
   const title = currentSong?.title ?? "未播放歌曲";
   const [fetchedLrc, setFetchedLrc] = useState<string | null>(null);
+  const [fetchedYrc, setFetchedYrc] = useState<string | null>(null);
+  const effectiveYrc = fetchedYrc ?? null;
   const effectiveLrc = currentSong?.lrc ?? fetchedLrc ?? null;
   const lyricLines = useMemo(() => {
-    if (!effectiveLrc) return [];
     try {
-      return parseLrc(effectiveLrc) ?? [];
+      
+      if (effectiveYrc && effectiveYrc.length > 0) {
+        return parseYrcLocal(effectiveYrc) ?? [];
+      }
+      
+      if (effectiveLrc && effectiveLrc.length > 0) {
+        return parseLrc(effectiveLrc) ?? [];
+      }
+      return [];
     } catch {
       return [];
     }
-  }, [effectiveLrc]);
+  }, [effectiveYrc, effectiveLrc]);
 
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -89,9 +146,9 @@ const MusicDetail = () => {
     };
   }, [audio]);
 
-  // Fetch lyrics when song changes and no lrc present
   useEffect(() => {
     setFetchedLrc(null);
+    setFetchedYrc(null);
     const songmid = currentSong?.songmid;
 
     if (!songmid) return;
@@ -100,11 +157,16 @@ const MusicDetail = () => {
 
     (async () => {
       try {
-        const { rawLrc } = await qqMusicClient.fetchLyrics(songmid);
-
-        if (!aborted) setFetchedLrc(rawLrc || "");
+        const { lrc, yrc } = await qqMusicClient.fetchLyrics(songmid);
+        if (!aborted) {
+          setFetchedLrc(lrc ?? "");
+          setFetchedYrc(yrc ?? "");
+        }
       } catch (_e) {
-        if (!aborted) setFetchedLrc("");
+        if (!aborted) {
+          setFetchedLrc("");
+          setFetchedYrc("");
+        }
       }
     })();
 
@@ -177,7 +239,7 @@ const MusicDetail = () => {
   }, [open, visible]);
 
   if (!visible) return null;
-
+  console.log(lyricLines);
   return (
     <div
       aria-modal
@@ -211,7 +273,7 @@ const MusicDetail = () => {
               : undefined;
 
             return (
-              <BackgroundRender album={proxied} renderer={EplorRenderer} />
+              <BackgroundRender album={proxied} renderer={EplorRenderer} flowSpeed={10}/>
             );
           })()}
         </div>

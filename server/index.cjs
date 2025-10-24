@@ -264,8 +264,22 @@ app.get(
 app.get(
   '/api/lyrics/:songmid',
   asyncHandler(async (req, res) => {
-    const data = await qqMusic.getLyric({ songmid: req.params.songmid });
-    res.json(data);
+    try {
+      const url = `https://api.vkeys.cn/v2/music/tencent/lyric?mid=${encodeURIComponent(
+        req.params.songmid,
+      )}`;
+      const response = await axios.get(url, { timeout: 15000 });
+      const payload = response?.data ?? {};
+      const d = payload?.data ?? {};
+      const result = {
+        lrc: typeof d.lrc === 'string' ? d.lrc : '',
+        yrc: typeof d.yrc === 'string' ? d.yrc : '',
+        trans: typeof d.trans === 'string' ? d.trans : '',
+      };
+      res.json(result);
+    } catch (err) {
+      res.status(502).json({ error: 'Failed to fetch lyrics' });
+    }
   })
 );
 
