@@ -152,6 +152,10 @@ const usePlayerStore = create<PlayerState>()(
           if (!currentAudio) {
             return;
           }
+          try {
+            const key = `progress:${song.songmid}`;
+            localStorage.removeItem(key);
+          } catch {}
           currentAudio.src = url;
           currentAudio.currentTime = 0;
           try {

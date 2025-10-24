@@ -239,7 +239,6 @@ const MusicDetail = () => {
   }, [open, visible]);
 
   if (!visible) return null;
-  console.log(lyricLines);
   return (
     <div
       aria-modal
@@ -250,6 +249,7 @@ const MusicDetail = () => {
     >
       <div
         className="music-detail--container"
+        data-play={isPlaying ? "playing" : "paused"}
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -273,7 +273,7 @@ const MusicDetail = () => {
               : undefined;
 
             return (
-              <BackgroundRender album={proxied} renderer={EplorRenderer} flowSpeed={10}/>
+              <BackgroundRender  album={proxied} renderer={EplorRenderer} flowSpeed={10}/>
             );
           })()}
         </div>

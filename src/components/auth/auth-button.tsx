@@ -95,6 +95,8 @@ const AuthButton = ({ className }: AuthButtonProps) => {
   const [nickname, setNickname] = useState("");
   const [errors, setErrors] = useState<AuthErrors>({});
   const [needsRegistration, setNeedsRegistration] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phase, setPhase] = useState<"email" | "login" | "register">("email");
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -103,7 +105,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
   const isEmailValid = emailRegex.test(email.trim());
-  const showPasswordField = isEmailValid;
+  const showPasswordField = phase !== "email";
 
   const passwordError = useMemo(() => {
     if (!password) {
@@ -116,20 +118,33 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     return undefined;
   }, [password]);
 
+  const confirmPasswordError = useMemo(() => {
+    if (!needsRegistration) {
+      return undefined;
+    }
+    if (!confirmPassword) {
+      return undefined;
+    }
+    if (password && confirmPassword && password !== confirmPassword) {
+      return "两次输入的密码不一致";
+    }
+
+    return undefined;
+  }, [confirmPassword, password, needsRegistration]);
+
   useEffect(() => {
     if (!showPasswordField) {
       setPassword("");
+      setConfirmPassword("");
       setErrors((prev) => {
-        if (!prev.password) {
-          return prev;
-        }
-        const { password: _passwordError, ...rest } = prev;
+        const { password: _p, nickname: _n, confirmPassword: _c, ...rest } = prev as Record<string, string> & { confirmPassword?: string };
 
-        return rest;
+        return rest as AuthErrors;
       });
       setNeedsRegistration(false);
       setNickname("");
       setServerError(null);
+      setPhase("email");
     }
   }, [showPasswordField]);
 
@@ -201,6 +216,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
         clearStoredAuthUser();
         setAuthStatus({ user: null });
         setEmail("");
+        setPhase("email");
       }
     };
 
@@ -226,6 +242,53 @@ const AuthButton = ({ className }: AuthButtonProps) => {
 
     const nextErrors: AuthErrors = {};
 
+    // Step-specific validation
+    if (phase === "email") {
+      if (!data.email) {
+        nextErrors.email = "请输入邮箱";
+      } else if (!isEmailValid) {
+        nextErrors.email = "请输入有效的邮箱";
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors(nextErrors);
+
+        return;
+      }
+
+      setErrors({});
+      setServerError(null);
+      setLoading(true);
+
+      try {
+        const url = new URL(
+          `/api/users/${encodeURIComponent(data.email)}`,
+          API_BASE_URL,
+        ).toString();
+        const response = await fetch(url, { method: "GET" });
+        let payload: unknown = null;
+        try {
+          payload = await response.json();
+        } catch (_) {
+          payload = null;
+        }
+
+        if (response.ok && payload && typeof payload === "object" && "user" in payload) {
+          setNeedsRegistration(false);
+          setPhase("login");
+        } else {
+          setNeedsRegistration(true);
+          setPhase("register");
+        }
+      } catch (error) {
+        setServerError("检查账户状态失败，请稍后重试");
+      } finally {
+        setLoading(false);
+      }
+
+      return;
+    }
+
     if (!data.email) {
       nextErrors.email = "请输入邮箱";
     }
@@ -234,11 +297,15 @@ const AuthButton = ({ className }: AuthButtonProps) => {
     } else if (passwordError) {
       nextErrors.password = passwordError;
     }
-    if (
-      needsRegistration &&
-      (!data.nickname || data.nickname.trim().length === 0)
-    ) {
-      nextErrors.nickname = "请输入昵称";
+    if (needsRegistration) {
+      if (!data.nickname || data.nickname.trim().length === 0) {
+        nextErrors.nickname = "请输入昵称";
+      }
+      if (!confirmPassword) {
+        nextErrors.confirmPassword = "请再次输入密码";
+      } else if (password !== confirmPassword) {
+        nextErrors.confirmPassword = "两次输入的密码不一致";
+      }
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -344,7 +411,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
             (payload &&
             typeof payload === "object" &&
             "needsRegistration" in payload
-              ? Boolean(payload.needsRegistration)
+              ? Boolean((payload as Record<string, unknown>).needsRegistration)
               : false) ||
             message.includes("请先注册") ||
             message.includes("用户不存在") ||
@@ -352,6 +419,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
 
           if (needsRegister) {
             setNeedsRegistration(true);
+            setPhase("register");
             setServerError(message);
 
             return;
@@ -490,7 +558,7 @@ const AuthButton = ({ className }: AuthButtonProps) => {
               </div>
             </div>
             <Form
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-3"
               validationErrors={errors}
               onSubmit={(event) => {
                 void handleSubmit(event);
@@ -503,12 +571,101 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                 name="email"
                 type="email"
                 value={email}
-                onValueChange={setEmail}
+                onValueChange={(val) => {
+                  setEmail(val);
+                  setPhase("email");
+                  setNeedsRegistration(false);
+                  setPassword("");
+                  setConfirmPassword("");
+                  setNickname("");
+                  setErrors({});
+                  setServerError(null);
+                }}
               />
               <AnimatePresence initial={false} mode="wait">
-                {showPasswordField ? (
+                {needsRegistration ? (
+                  <>
+                    <motion.div
+                      key="nickname-field"
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      className="w-full"
+                      exit={{ opacity: 0, y: 12, height: 0 }}
+                      initial={{ opacity: 0, y: 12, height: 0 }}
+                      style={{ overflow: "hidden" }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      <Input
+                        isRequired
+                        errorMessage={errors.nickname}
+                        name="nickname"
+                        placeholder="请输入昵称"
+                        value={nickname}
+                        variant="bordered"
+                        onValueChange={setNickname}
+                      />
+                    </motion.div>
+                    <motion.div
+                      key="password-field"
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      className="w-full"
+                      exit={{ opacity: 0, y: -12, height: 0 }}
+                      initial={{ opacity: 0, y: -12, height: 0 }}
+                      style={{ overflow: "hidden" }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      <Input
+                        isRequired
+                        endContent={
+                          <button
+                            aria-label="切换密码可见"
+                            className="focus:outline-none"
+                            type="button"
+                            onClick={() => {
+                              setPasswordVisible((value) => !value);
+                            }}
+                          >
+                            {passwordVisible ? (
+                              <EyeSlashFilledIcon className="pointer-events-none text-2xl text-default-400" />
+                            ) : (
+                              <EyeFilledIcon className="pointer-events-none text-2xl text-default-400" />
+                            )}
+                          </button>
+                        }
+                        errorMessage={errors.password ?? passwordError}
+                        isInvalid={Boolean(errors.password ?? passwordError)}
+                        label="密码"
+                        name="password"
+                        type={passwordVisible ? "text" : "password"}
+                        value={password}
+                        variant="bordered"
+                        onValueChange={setPassword}
+                      />
+                    </motion.div>
+                    <motion.div
+                      key="confirm-password-field"
+                      animate={{ opacity: 1, y: 0, height: "auto" }}
+                      className="w-full"
+                      exit={{ opacity: 0, y: 12, height: 0 }}
+                      initial={{ opacity: 0, y: 12, height: 0 }}
+                      style={{ overflow: "hidden" }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                    >
+                      <Input
+                        isRequired
+                        errorMessage={(errors as Record<string, string>).confirmPassword ?? confirmPasswordError}
+                        isInvalid={Boolean((errors as Record<string, string>).confirmPassword ?? confirmPasswordError)}
+                        label="确认密码"
+                        name="confirmPassword"
+                        type={passwordVisible ? "text" : "password"}
+                        value={confirmPassword}
+                        variant="bordered"
+                        onValueChange={setConfirmPassword}
+                      />
+                    </motion.div>
+                  </>
+                ) : showPasswordField ? (
                   <motion.div
-                    key="password-field"
+                    key="password-field-login"
                     animate={{ opacity: 1, y: 0, height: "auto" }}
                     className="w-full"
                     exit={{ opacity: 0, y: -12, height: 0 }}
@@ -545,33 +702,18 @@ const AuthButton = ({ className }: AuthButtonProps) => {
                     />
                   </motion.div>
                 ) : null}
-                {needsRegistration ? (
-                  <motion.div
-                    key="nickname-field"
-                    animate={{ opacity: 1, y: 0, height: "auto" }}
-                    className="w-full"
-                    exit={{ opacity: 0, y: 12, height: 0 }}
-                    initial={{ opacity: 0, y: 12, height: 0 }}
-                    style={{ overflow: "hidden" }}
-                    transition={{ duration: 0.25, ease: "easeOut" }}
-                  >
-                    <Input
-                      isRequired
-                      errorMessage={errors.nickname}
-                      label="设置昵称"
-                      name="nickname"
-                      placeholder="请输入昵称"
-                      value={nickname}
-                      variant="bordered"
-                      onValueChange={setNickname}
-                    />
-                  </motion.div>
-                ) : null}
               </AnimatePresence>
               <Button
                 className="mt-2 w-full bg-white/10 text-white hover:bg-white/15"
                 disableRipple={true}
-                isDisabled={!showPasswordField || loading}
+                isDisabled={
+                  loading ||
+                  (phase === "email" && !isEmailValid) ||
+                  (phase === "login" && Boolean(passwordError || !password)) ||
+                  (phase === "register" && (
+                    !nickname || Boolean(passwordError) || !password || !confirmPassword || password !== confirmPassword
+                  ))
+                }
                 isLoading={loading}
                 radius="lg"
                 size="lg"
