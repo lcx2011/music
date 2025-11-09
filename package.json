@@ -13,6 +13,9 @@
   "dependencies": {
     "@applemusic-like-lyrics/lyric": "^0.2.4",
     "@applemusic-like-lyrics/react": "^0.1.5",
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/cli": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
     "@heroicons/react": "^2.2.0",
     "@heroui/accordion": "^2.2.24",
     "@heroui/button": "2.2.27",
